@@ -42,9 +42,11 @@
   /* ===== CANVAS ===== */
   #heartCanvas {
     position: absolute;
-    top: 46%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    display: block;
   }
 
   /* ===== TYPEWRITER TEXT ===== */
@@ -54,7 +56,7 @@
     left: 50%;
     transform: translateX(-50%);
     font-family: 'Dancing Script', cursive;
-    font-size: clamp(36px, 6vw, 72px);
+    font-size: clamp(28px, 8vw, 72px);
     color: #ff2e6b;
     text-shadow: 0 0 18px #ff6fa8, 0 0 40px #ff2e6b;
     white-space: nowrap;
@@ -78,11 +80,7 @@
   /* ===== CENTER IMAGE ===== */
   #centerImg {
     position: absolute;
-    top: 52%;
-    left: 51%;
     transform: translate(-50%, -50%);
-    width: 140px;
-    height: 140px;
     border-radius: 50%;
     object-fit: cover;
     pointer-events: none;
@@ -91,7 +89,7 @@
     animation: pulse 2.4s ease-in-out infinite;
   }
   @keyframes pulse {
-    0%, 100% { transform: translate(-50%, -50%) scale(1); filter: drop-shadow(0 0 18px #ff2e6b) drop-shadow(0 0 40px #ff6fa8); }
+    0%, 100% { transform: translate(-50%, -50%) scale(1);    filter: drop-shadow(0 0 18px #ff2e6b) drop-shadow(0 0 40px #ff6fa8); }
     50%       { transform: translate(-50%, -50%) scale(1.07); filter: drop-shadow(0 0 30px #ff2e6b) drop-shadow(0 0 60px #ff6fa8); }
   }
 </style>
@@ -157,23 +155,27 @@ setInterval(() => {
 const canvas = document.getElementById("heartCanvas");
 const ctx    = canvas.getContext("2d");
 
-// Responsive size — más grande
-const SIZE = Math.min(window.innerWidth, window.innerHeight) * 1.1;
-canvas.width  = SIZE;
-canvas.height = SIZE;
+// Use full viewport — works on mobile and desktop
+const VW = window.innerWidth;
+const VH = window.innerHeight;
+canvas.width  = VW;
+canvas.height = VH;
 
-const CX = SIZE / 2;
-const CY = SIZE / 2;
-const R  = SIZE * 0.38; // heart scale
+// Heart fits 80% of the narrower dimension, centered horizontally
+// and placed in the upper ~72% of the screen (leaving room for text below)
+const HEART_SIZE = Math.min(VW, VH) * 0.88;
+const CX = VW * 0.47;           // slightly left
+const CY = VH * 0.40;          // slightly higher
+const R  = HEART_SIZE * 0.38;
 
-// Heart parametric: x = R*16sin³t, y = -R*(13cost - 5cos2t - 2cos3t - cos4t)
+// Heart parametric
 function heartPoint(t) {
   const x = CX + R * 0.04 * 16 * Math.pow(Math.sin(t), 3);
   const y = CY - R * 0.04 * (13*Math.cos(t) - 5*Math.cos(2*t) - 2*Math.cos(3*t) - Math.cos(4*t));
   return { x, y };
 }
 
-// Pre-compute evenly spaced points along the heart
+// Pre-compute path
 const TOTAL_POINTS = 600;
 const heartPath = [];
 for (let i = 0; i < TOTAL_POINTS; i++) {
@@ -181,10 +183,8 @@ for (let i = 0; i < TOTAL_POINTS; i++) {
   heartPath.push(heartPoint(t));
 }
 
-// Words to scatter along the path
+// Words
 const words = ["I love u", "I love you", "te amo", "I love u"];
-
-// Create "particles" — each one is a word placed on the heart path
 const NUM_WORDS = 110;
 const particles = [];
 
@@ -192,37 +192,38 @@ for (let i = 0; i < NUM_WORDS; i++) {
   const pathIndex = (i / NUM_WORDS) * TOTAL_POINTS;
   const word  = words[i % words.length];
   const size  = 13 + Math.random() * 12;
-  const speed = 0.15 + Math.random() * 0.25; // points per frame
+  const speed = 0.15 + Math.random() * 0.25;
 
   particles.push({
-    pathIndex,
-    word,
-    size,
-    speed,
-    // Colour: hot reds / pinks
-    hue: 340 + Math.random() * 30,
-    sat: 80 + Math.random() * 20,
-    lit: 50 + Math.random() * 30,
+    pathIndex, word, size, speed,
+    hue:   340 + Math.random() * 30,
+    sat:   80  + Math.random() * 20,
+    lit:   50  + Math.random() * 30,
     alpha: 0.6 + Math.random() * 0.4,
   });
 }
 
+// Also position center image dynamically via JS for pixel-perfect centering
+const img = document.getElementById("centerImg");
+const imgSize = HEART_SIZE * 0.28;
+img.style.width  = imgSize + "px";
+img.style.height = imgSize + "px";
+img.style.top    = CY + "px";
+img.style.left   = CX + "px";
+
 function draw() {
-  ctx.clearRect(0, 0, SIZE, SIZE);
+  ctx.clearRect(0, 0, VW, VH);
 
   for (const p of particles) {
-    // Advance along path
     p.pathIndex = (p.pathIndex + p.speed) % TOTAL_POINTS;
 
     const idx  = Math.floor(p.pathIndex);
     const next = (idx + 1) % TOTAL_POINTS;
     const frac = p.pathIndex - idx;
 
-    // Interpolate for smooth motion
     const px = heartPath[idx].x + (heartPath[next].x - heartPath[idx].x) * frac;
     const py = heartPath[idx].y + (heartPath[next].y - heartPath[idx].y) * frac;
 
-    // Draw word
     ctx.font = `${p.size}px 'Dancing Script', cursive`;
     ctx.fillStyle = `hsla(${p.hue},${p.sat}%,${p.lit}%,${p.alpha})`;
     ctx.shadowColor = `hsl(${p.hue},100%,60%)`;
