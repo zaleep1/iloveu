@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>💖</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #000;
+    overflow: hidden;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Dancing Script', cursive;
+  }
+
+  /* ===== BUBBLES ===== */
+  #bubbles {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 10;
+  }
+  .bubble {
+    position: absolute;
+    font-size: 26px;
+    animation: floatUp 7s forwards ease-in-out;
+  }
+  @keyframes floatUp {
+    0%   { opacity: 0; transform: scale(0.5) translateY(0); }
+    20%  { opacity: 1; transform: scale(1.1) translateY(-30px); }
+    80%  { opacity: 0.8; transform: scale(1)   translateY(-100px); }
+    100% { opacity: 0; transform: scale(0.7) translateY(-180px); }
+  }
+
+  /* ===== CANVAS ===== */
+  #heartCanvas {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  /* ===== CENTER IMAGE ===== */
+  #centerImg {
+    position: absolute;
+    top: 52%;
+    left: 51%;
+    transform: translate(-50%, -50%);
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    object-fit: cover;
+    pointer-events: none;
+    z-index: 5;
+    filter: drop-shadow(0 0 18px #ff2e6b) drop-shadow(0 0 40px #ff6fa8);
+    animation: pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); filter: drop-shadow(0 0 18px #ff2e6b) drop-shadow(0 0 40px #ff6fa8); }
+    50%       { transform: translate(-50%, -50%) scale(1.07); filter: drop-shadow(0 0 30px #ff2e6b) drop-shadow(0 0 60px #ff6fa8); }
+  }
+</style>
+</head>
+<body>
+
+<div id="bubbles"></div>
+<canvas id="heartCanvas"></canvas>
+<img id="centerImg" src="iloveu.png" alt="love">
+
+<script>
+/* ===========================
+   BUBBLES — solo corazones
+   =========================== */
+const heartEmojis = ["💕","❤️‍🔥","💓","💝","💖","💗","💞","❤️","🩷","💘"];
+setInterval(() => {
+  const b = document.createElement("div");
+  b.className = "bubble";
+  b.innerText = heartEmojis[Math.floor(Math.random() * heartEmojis.length)];
+  b.style.left = Math.random() * 95 + "vw";
+  b.style.top  = (60 + Math.random() * 35) + "vh";
+  document.getElementById("bubbles").appendChild(b);
+  setTimeout(() => b.remove(), 7000);
+}, 600);
+
+/* ===========================
+   HEART WORD ANIMATION
+   =========================== */
+const canvas = document.getElementById("heartCanvas");
+const ctx    = canvas.getContext("2d");
+
+// Responsive size
+const SIZE = Math.min(window.innerWidth, window.innerHeight) * 0.92;
+canvas.width  = SIZE;
+canvas.height = SIZE;
+
+const CX = SIZE / 2;
+const CY = SIZE / 2;
+const R  = SIZE * 0.38; // heart scale
+
+// Heart parametric: x = R*16sin³t, y = -R*(13cost - 5cos2t - 2cos3t - cos4t)
+function heartPoint(t) {
+  const x = CX + R * 0.04 * 16 * Math.pow(Math.sin(t), 3);
+  const y = CY - R * 0.04 * (13*Math.cos(t) - 5*Math.cos(2*t) - 2*Math.cos(3*t) - Math.cos(4*t));
+  return { x, y };
+}
+
+// Pre-compute evenly spaced points along the heart
+const TOTAL_POINTS = 600;
+const heartPath = [];
+for (let i = 0; i < TOTAL_POINTS; i++) {
+  const t = (i / TOTAL_POINTS) * Math.PI * 2;
+  heartPath.push(heartPoint(t));
+}
+
+// Words to scatter along the path
+const words = ["I love u", "I love you", "te amo", "I love u"];
+
+// Create "particles" — each one is a word placed on the heart path
+const NUM_WORDS = 90;
+const particles = [];
+
+for (let i = 0; i < NUM_WORDS; i++) {
+  // Spread randomly across path
+  const pathIndex = (i / NUM_WORDS) * TOTAL_POINTS;
+  const word  = words[i % words.length];
+  // Vary sizes for depth effect
+  const size  = 9 + Math.random() * 9;
+  const speed = 0.15 + Math.random() * 0.25; // points per frame
+
+  particles.push({
+    pathIndex,
+    word,
+    size,
+    speed,
+    // Colour: hot reds / pinks
+    hue: 340 + Math.random() * 30,
+    sat: 80 + Math.random() * 20,
+    lit: 50 + Math.random() * 30,
+    alpha: 0.6 + Math.random() * 0.4,
+  });
+}
+
+function draw() {
+  ctx.clearRect(0, 0, SIZE, SIZE);
+
+  for (const p of particles) {
+    // Advance along path
+    p.pathIndex = (p.pathIndex + p.speed) % TOTAL_POINTS;
+
+    const idx  = Math.floor(p.pathIndex);
+    const next = (idx + 1) % TOTAL_POINTS;
+    const frac = p.pathIndex - idx;
+
+    // Interpolate for smooth motion
+    const px = heartPath[idx].x + (heartPath[next].x - heartPath[idx].x) * frac;
+    const py = heartPath[idx].y + (heartPath[next].y - heartPath[idx].y) * frac;
+
+    // Draw word
+    ctx.font = `${p.size}px 'Dancing Script', cursive`;
+    ctx.fillStyle = `hsla(${p.hue},${p.sat}%,${p.lit}%,${p.alpha})`;
+    ctx.shadowColor = `hsl(${p.hue},100%,60%)`;
+    ctx.shadowBlur  = 8;
+    ctx.fillText(p.word, px, py);
+  }
+
+  requestAnimationFrame(draw);
+}
+
+draw();
+</script>
+
+</body>
+</html>
