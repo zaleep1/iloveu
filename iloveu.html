@@ -42,9 +42,37 @@
   /* ===== CANVAS ===== */
   #heartCanvas {
     position: absolute;
-    top: 50%;
+    top: 46%;
     left: 50%;
     transform: translate(-50%, -50%);
+  }
+
+  /* ===== TYPEWRITER TEXT ===== */
+  #loveText {
+    position: absolute;
+    bottom: 4vh;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Dancing Script', cursive;
+    font-size: clamp(36px, 6vw, 72px);
+    color: #ff2e6b;
+    text-shadow: 0 0 18px #ff6fa8, 0 0 40px #ff2e6b;
+    white-space: nowrap;
+    letter-spacing: 3px;
+    z-index: 6;
+  }
+  #cursor {
+    display: inline-block;
+    width: 3px;
+    background: #ff6fa8;
+    margin-left: 3px;
+    animation: blink 0.8s step-end infinite;
+    vertical-align: middle;
+    height: 0.85em;
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0; }
   }
 
   /* ===== CENTER IMAGE ===== */
@@ -73,8 +101,24 @@
 <div id="bubbles"></div>
 <canvas id="heartCanvas"></canvas>
 <img id="centerImg" src="iloveu.png" alt="love">
+<div id="loveText"><span id="typed"></span><span id="cursor"></span></div>
 
 <script>
+/* ===========================
+   TYPEWRITER
+   =========================== */
+const fullText = "Te amo Alexa";
+const typed = document.getElementById("typed");
+let charIndex = 0;
+function typeWriter() {
+  if (charIndex < fullText.length) {
+    typed.textContent += fullText[charIndex];
+    charIndex++;
+    setTimeout(typeWriter, 110);
+  }
+}
+setTimeout(typeWriter, 800);
+
 /* ===========================
    BUBBLES — solo corazones
    =========================== */
