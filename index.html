@@ -98,12 +98,30 @@
 </head>
 <body>
 
+<audio id="music" src="iloveu.mp3" loop></audio>
 <div id="bubbles"></div>
 <canvas id="heartCanvas"></canvas>
 <img id="centerImg" src="iloveu.png" alt="love">
 <div id="loveText"><span id="typed"></span><span id="cursor"></span></div>
 
 <script>
+/* ===========================
+   MUSIC
+   =========================== */
+const music = document.getElementById("music");
+music.volume = 0.7;
+// Autoplay on first interaction (browser policy)
+function startMusic() {
+  music.play();
+  document.removeEventListener("click", startMusic);
+  document.removeEventListener("touchstart", startMusic);
+}
+// Try autoplay directly, fallback to interaction
+music.play().catch(() => {
+  document.addEventListener("click", startMusic);
+  document.addEventListener("touchstart", startMusic);
+});
+
 /* ===========================
    TYPEWRITER
    =========================== */
@@ -220,3 +238,4 @@ draw();
 
 </body>
 </html>
+
